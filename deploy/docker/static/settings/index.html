@@ -300,6 +300,18 @@
                     <div id="terminal-container"></div>
                 </div>
 
+                <!-- Detected OAuth URL (hidden by default) -->
+                <div id="oauth-url-container" class="hidden bg-dark border border-accent rounded p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-accent font-medium">OAuth URL erkannt:</span>
+                        <button onclick="copyOAuthUrl()"
+                            class="px-3 py-1 bg-accent text-dark rounded text-xs font-medium hover:bg-primary">
+                            📋 URL kopieren
+                        </button>
+                    </div>
+                    <div id="oauth-url-display" class="text-xs text-secondary break-all max-h-16 overflow-auto"></div>
+                </div>
+
                 <!-- Quick Commands -->
                 <div class="flex flex-wrap gap-2">
                     <button onclick="sendCommand('claude auth login')"
@@ -353,6 +365,8 @@
         let terminal = null;
         let terminalWs = null;
         let fitAddon = null;
+        let detectedOAuthUrl = '';
+        let terminalBuffer = '';
 
         // ========== UI Helpers ==========
         function showStatus(message, isError = false) {
@@ -612,6 +626,13 @@
                     const msg = JSON.parse(event.data);
                     if (msg.type === 'output') {
                         terminal.write(msg.data);
+                        // Buffer output for URL detection
+                        terminalBuffer += msg.data;
+                        detectOAuthUrl(terminalBuffer);
+                        // Keep buffer manageable
+                        if (terminalBuffer.length > 10000) {
+                            terminalBuffer = terminalBuffer.slice(-5000);
+                        }
                     } else if (msg.type === 'error') {
                         terminal.writeln(`\x1b[31mError: ${msg.data}\x1b[0m`);
                     }
@@ -690,6 +711,45 @@
                     btnConnect.classList.remove('hidden');
                     btnDisconnect.classList.add('hidden');
             }
+        }
+
+        // ========== OAuth URL Detection ==========
+        function detectOAuthUrl(buffer) {
+            // Remove ANSI escape codes for cleaner matching
+            const cleanBuffer = buffer.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+
+            // Look for Claude OAuth URL pattern
+            const urlMatch = cleanBuffer.match(/https:\/\/claude\.ai\/oauth\/authorize\?[^\s\n]+/);
+            if (urlMatch) {
+                // Extract and clean the URL (remove any line breaks/whitespace)
+                let url = urlMatch[0];
+                // Remove any trailing characters that aren't part of URL
+                url = url.replace(/[\s\n\r]+/g, '');
+
+                if (url !== detectedOAuthUrl) {
+                    detectedOAuthUrl = url;
+                    showOAuthUrl(url);
+                }
+            }
+        }
+
+        function showOAuthUrl(url) {
+            const container = document.getElementById('oauth-url-container');
+            const display = document.getElementById('oauth-url-display');
+
+            container.classList.remove('hidden');
+            display.textContent = url;
+        }
+
+        function copyOAuthUrl() {
+            if (!detectedOAuthUrl) return;
+
+            navigator.clipboard.writeText(detectedOAuthUrl).then(() => {
+                showStatus('OAuth URL kopiert! Öffne sie in einem neuen Tab.');
+            }).catch(err => {
+                // Fallback: show URL in prompt
+                prompt('URL kopieren (Ctrl+C):', detectedOAuthUrl);
+            });
         }
 
         // ========== Initialize ==========
