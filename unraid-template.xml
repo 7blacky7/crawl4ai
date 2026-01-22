@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>crawl4ai-claude</Name>
+  <Repository>7blacky7/crawl4ai-claude</Repository>
+  <Registry>https://hub.docker.com/r/7blacky7/crawl4ai-claude</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Project>https://github.com/7blacky7/crawl4ai</Project>
+  <Overview>
+    Crawl4AI mit Claude OAuth Support - Web Crawler fuer LLM/AI Anwendungen.
+
+    Nutzt Claude CLI mit OAuth (Max-Abo), kein API-Key erforderlich!
+
+    Features:
+    - Web Crawling optimiert fuer LLMs
+    - Markdown-Generierung
+    - Strukturierte Datenextraktion
+    - Claude OAuth Integration (kein API-Key!)
+    - Deep Crawling
+    - Session-basierte Konversationen
+  </Overview>
+  <Category>AI: Tools:</Category>
+  <WebUI>http://[IP]:[PORT:11235]/</WebUI>
+  <TemplateURL/>
+  <Icon>https://raw.githubusercontent.com/unclecode/crawl4ai/main/docs/assets/logo.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Requires/>
+
+  <Config Name="Web UI Port" Target="11235" Default="11235" Mode="tcp" Description="Crawl4AI API Port" Type="Port" Display="always" Required="true" Mask="false"/>
+
+  <Config Name="Redis Port" Target="6379" Default="6379" Mode="tcp" Description="Redis Cache Port (optional)" Type="Port" Display="advanced" Required="false" Mask="false"/>
+
+  <Config Name="Claude Config" Target="/home/appuser/.claude" Default="/mnt/user/appdata/crawl4ai-claude/claude" Mode="rw" Description="Claude CLI Konfiguration und OAuth Token" Type="Path" Display="always" Required="true" Mask="false"/>
+
+  <Config Name="Cache" Target="/home/appuser/.cache" Default="/mnt/user/appdata/crawl4ai-claude/cache" Mode="rw" Description="Cache fuer Playwright und andere Daten" Type="Path" Display="advanced" Required="false" Mask="false"/>
+
+  <Config Name="CLAUDE_AUTH_TOKEN" Target="CLAUDE_AUTH_TOKEN" Default="" Mode="" Description="Optional: OAuth Token fuer Claude (wird automatisch aus .claude gelesen wenn vorhanden)" Type="Variable" Display="advanced" Required="false" Mask="true"/>
+
+</Container>

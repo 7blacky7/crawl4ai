@@ -109,6 +109,17 @@ from .utils import (
     hooks_to_string
 )
 
+# Claude OAuth Provider (kein API-Key noetig!)
+from .claude_oauth_provider import (
+    perform_claude_oauth_completion,
+    aperform_claude_oauth_completion,
+    is_claude_oauth_provider,
+    is_claude_cli_available,
+    get_session_history,
+    clear_session,
+    list_sessions,
+)
+
 __all__ = [
     "AsyncLoggerBase",
     "AsyncLogger",
@@ -198,7 +209,15 @@ __all__ = [
     "BrowserAdapter",
     "PlaywrightAdapter", 
     "UndetectedAdapter",
-    "LinkPreviewConfig"
+    "LinkPreviewConfig",
+    # Claude OAuth Provider
+    "perform_claude_oauth_completion",
+    "aperform_claude_oauth_completion",
+    "is_claude_oauth_provider",
+    "is_claude_cli_available",
+    "get_session_history",
+    "clear_session",
+    "list_sessions",
 ]
 
 

@@ -1773,6 +1773,18 @@ def perform_completion_with_backoff(
         dict: The API response or an error message after all retries.
     """
 
+    # =========================================
+    # Claude OAuth Provider (kein API-Key noetig!)
+    # Nutzt Claude CLI mit OAuth-Authentifizierung
+    # =========================================
+    from .claude_oauth_provider import is_claude_oauth_provider, perform_claude_oauth_completion
+    if is_claude_oauth_provider(provider):
+        return perform_claude_oauth_completion(
+            prompt=prompt_with_variables,
+            json_response=json_response,
+            **kwargs
+        )
+
     from litellm import completion
     from litellm.exceptions import RateLimitError
     import litellm
@@ -1863,6 +1875,18 @@ async def aperform_completion_with_backoff(
     Returns:
         dict: The API response or an error message after all retries.
     """
+
+    # =========================================
+    # Claude OAuth Provider (kein API-Key noetig!)
+    # Nutzt Claude CLI mit OAuth-Authentifizierung
+    # =========================================
+    from .claude_oauth_provider import is_claude_oauth_provider, aperform_claude_oauth_completion
+    if is_claude_oauth_provider(provider):
+        return await aperform_claude_oauth_completion(
+            prompt=prompt_with_variables,
+            json_response=json_response,
+            **kwargs
+        )
 
     from litellm import acompletion
     from litellm.exceptions import RateLimitError
