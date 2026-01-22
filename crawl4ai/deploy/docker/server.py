@@ -311,6 +311,10 @@ app.include_router(monitor_router)
 from settings_routes import router as settings_router
 app.include_router(settings_router)
 
+# ── terminal router ─────────────────────────────────────────
+from terminal_routes import router as terminal_router
+app.include_router(terminal_router)
+
 logger = logging.getLogger(__name__)
 
 # ──────────────────────── Endpoints ──────────────────────────

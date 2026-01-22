@@ -28,6 +28,11 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- xterm.js for terminal -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.min.js"></script>
     <style>
         /* Toggle switch styles */
         .toggle-switch {
@@ -94,6 +99,35 @@
         }
         .status-pulse {
             animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Terminal container */
+        #terminal-container {
+            height: 300px;
+            background: #070708;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #terminal-container .xterm {
+            padding: 8px;
+        }
+        .terminal-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #1E1E1E;
+            border-bottom: 1px solid #3F3F44;
+        }
+        .terminal-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .terminal-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -245,21 +279,52 @@
                     <span id="oauth-text" class="text-sm">Checking status...</span>
                 </div>
 
-                <!-- Instructions -->
-                <div class="bg-dark rounded p-3 text-xs">
-                    <p class="text-secondary mb-2">To use Claude OAuth:</p>
-                    <ol class="list-decimal list-inside space-y-1 text-secondary">
-                        <li>Install Claude CLI: <code class="text-primary">npm install -g @anthropic-ai/claude-code</code></li>
-                        <li>Login: <code class="text-primary">claude auth login</code></li>
-                        <li>Use in Crawl4AI: <code class="text-primary">LLMConfig(provider="claude-oauth")</code></li>
-                    </ol>
+                <!-- Terminal -->
+                <div class="bg-dark rounded overflow-hidden border border-border">
+                    <div class="terminal-toolbar">
+                        <div class="terminal-status">
+                            <div id="terminal-status-dot" class="terminal-status-dot bg-gray-500"></div>
+                            <span id="terminal-status-text" class="text-xs text-secondary">Disconnected</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="connectTerminal()" id="btn-connect"
+                                class="px-2 py-1 text-xs border border-border rounded hover:bg-surface text-green-400">
+                                Connect
+                            </button>
+                            <button onclick="disconnectTerminal()" id="btn-disconnect"
+                                class="px-2 py-1 text-xs border border-border rounded hover:bg-surface text-red-400 hidden">
+                                Disconnect
+                            </button>
+                        </div>
+                    </div>
+                    <div id="terminal-container"></div>
                 </div>
 
-                <!-- Refresh Button -->
-                <button onclick="checkOAuthStatus()"
-                    class="px-3 py-1 border border-border rounded text-xs hover:bg-dark">
-                    Refresh Status
-                </button>
+                <!-- Quick Commands -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="sendCommand('claude auth login')"
+                        class="px-3 py-1 border border-accent rounded text-xs hover:bg-accent hover:text-dark text-accent">
+                        claude auth login
+                    </button>
+                    <button onclick="sendCommand('claude auth status')"
+                        class="px-3 py-1 border border-border rounded text-xs hover:bg-dark">
+                        claude auth status
+                    </button>
+                    <button onclick="sendCommand('claude --version')"
+                        class="px-3 py-1 border border-border rounded text-xs hover:bg-dark">
+                        claude --version
+                    </button>
+                    <button onclick="checkOAuthStatus()"
+                        class="px-3 py-1 border border-border rounded text-xs hover:bg-dark ml-auto">
+                        Refresh Status
+                    </button>
+                </div>
+
+                <!-- Help text -->
+                <div class="text-xs text-secondary">
+                    <p>Click <span class="text-green-400">Connect</span> to open a terminal session, then run <code class="text-primary">claude auth login</code> to authenticate.</p>
+                    <p class="mt-1">After login, use <code class="text-primary">LLMConfig(provider="claude-oauth")</code> in Crawl4AI.</p>
+                </div>
             </div>
         </section>
 
@@ -285,6 +350,9 @@
         // ========== State ==========
         let currentSettings = {};
         let settingsSchema = {};
+        let terminal = null;
+        let terminalWs = null;
+        let fitAddon = null;
 
         // ========== UI Helpers ==========
         function showStatus(message, isError = false) {
@@ -444,10 +512,191 @@
             }
         }
 
+        // ========== Terminal Management ==========
+        function initTerminal() {
+            if (terminal) return;
+
+            terminal = new Terminal({
+                cursorBlink: true,
+                fontSize: 13,
+                fontFamily: 'Fira Code, monospace',
+                theme: {
+                    background: '#070708',
+                    foreground: '#E8E9ED',
+                    cursor: '#4EFFFF',
+                    cursorAccent: '#070708',
+                    selection: 'rgba(78, 255, 255, 0.3)',
+                    black: '#070708',
+                    red: '#FF6B6B',
+                    green: '#4EFFFF',
+                    yellow: '#FFE66D',
+                    blue: '#4DA8DA',
+                    magenta: '#F380F5',
+                    cyan: '#4EFFFF',
+                    white: '#E8E9ED',
+                    brightBlack: '#3F3F44',
+                    brightRed: '#FF8A8A',
+                    brightGreen: '#7FFFFF',
+                    brightYellow: '#FFF09D',
+                    brightBlue: '#7DBCE8',
+                    brightMagenta: '#F5A0F7',
+                    brightCyan: '#7FFFFF',
+                    brightWhite: '#FFFFFF'
+                }
+            });
+
+            fitAddon = new FitAddon.FitAddon();
+            const webLinksAddon = new WebLinksAddon.WebLinksAddon();
+
+            terminal.loadAddon(fitAddon);
+            terminal.loadAddon(webLinksAddon);
+
+            terminal.open(document.getElementById('terminal-container'));
+            fitAddon.fit();
+
+            terminal.onData(data => {
+                if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+                    terminalWs.send(JSON.stringify({ type: 'input', data: data }));
+                }
+            });
+
+            // Handle resize
+            window.addEventListener('resize', () => {
+                if (fitAddon && terminal) {
+                    fitAddon.fit();
+                    if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+                        terminalWs.send(JSON.stringify({
+                            type: 'resize',
+                            cols: terminal.cols,
+                            rows: terminal.rows
+                        }));
+                    }
+                }
+            });
+
+            terminal.writeln('\x1b[1;36m=== Crawl4AI Terminal ===\x1b[0m');
+            terminal.writeln('\x1b[33mClick "Connect" to start a shell session.\x1b[0m');
+            terminal.writeln('');
+        }
+
+        function connectTerminal() {
+            if (!terminal) initTerminal();
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/terminal/ws`;
+
+            updateTerminalStatus('connecting');
+            terminal.writeln('\x1b[33mConnecting to terminal...\x1b[0m');
+
+            terminalWs = new WebSocket(wsUrl);
+
+            terminalWs.onopen = () => {
+                updateTerminalStatus('connected');
+                terminal.writeln('\x1b[32mConnected!\x1b[0m');
+                terminal.writeln('');
+                terminal.focus();
+
+                // Send initial size
+                setTimeout(() => {
+                    fitAddon.fit();
+                    terminalWs.send(JSON.stringify({
+                        type: 'resize',
+                        cols: terminal.cols,
+                        rows: terminal.rows
+                    }));
+                }, 100);
+            };
+
+            terminalWs.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'output') {
+                        terminal.write(msg.data);
+                    } else if (msg.type === 'error') {
+                        terminal.writeln(`\x1b[31mError: ${msg.data}\x1b[0m`);
+                    }
+                } catch (e) {
+                    // Raw data fallback
+                    terminal.write(event.data);
+                }
+            };
+
+            terminalWs.onclose = () => {
+                updateTerminalStatus('disconnected');
+                terminal.writeln('');
+                terminal.writeln('\x1b[33mDisconnected from terminal.\x1b[0m');
+            };
+
+            terminalWs.onerror = (error) => {
+                updateTerminalStatus('error');
+                terminal.writeln(`\x1b[31mWebSocket error. Is the server running?\x1b[0m`);
+            };
+        }
+
+        function disconnectTerminal() {
+            if (terminalWs) {
+                terminalWs.close();
+                terminalWs = null;
+            }
+            updateTerminalStatus('disconnected');
+        }
+
+        function sendCommand(cmd) {
+            if (!terminalWs || terminalWs.readyState !== WebSocket.OPEN) {
+                // Auto-connect if not connected
+                connectTerminal();
+                // Wait for connection and then send
+                setTimeout(() => {
+                    if (terminalWs && terminalWs.readyState === WebSocket.OPEN) {
+                        terminalWs.send(JSON.stringify({ type: 'input', data: cmd + '\n' }));
+                    }
+                }, 500);
+                return;
+            }
+            terminalWs.send(JSON.stringify({ type: 'input', data: cmd + '\n' }));
+            terminal.focus();
+        }
+
+        function updateTerminalStatus(status) {
+            const dot = document.getElementById('terminal-status-dot');
+            const text = document.getElementById('terminal-status-text');
+            const btnConnect = document.getElementById('btn-connect');
+            const btnDisconnect = document.getElementById('btn-disconnect');
+
+            switch (status) {
+                case 'connected':
+                    dot.className = 'terminal-status-dot bg-green-500';
+                    text.textContent = 'Connected';
+                    text.className = 'text-xs text-green-400';
+                    btnConnect.classList.add('hidden');
+                    btnDisconnect.classList.remove('hidden');
+                    break;
+                case 'connecting':
+                    dot.className = 'terminal-status-dot bg-yellow-500 status-pulse';
+                    text.textContent = 'Connecting...';
+                    text.className = 'text-xs text-yellow-400';
+                    break;
+                case 'error':
+                    dot.className = 'terminal-status-dot bg-red-500';
+                    text.textContent = 'Error';
+                    text.className = 'text-xs text-red-400';
+                    btnConnect.classList.remove('hidden');
+                    btnDisconnect.classList.add('hidden');
+                    break;
+                default:
+                    dot.className = 'terminal-status-dot bg-gray-500';
+                    text.textContent = 'Disconnected';
+                    text.className = 'text-xs text-secondary';
+                    btnConnect.classList.remove('hidden');
+                    btnDisconnect.classList.add('hidden');
+            }
+        }
+
         // ========== Initialize ==========
         document.addEventListener('DOMContentLoaded', () => {
             loadSettings();
             checkOAuthStatus();
+            initTerminal();
         });
     </script>
 </body>
