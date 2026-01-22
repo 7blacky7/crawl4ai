@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crawl4AI Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4EFFFF',
+                        primarydim: '#09b5a5',
+                        accent: '#F380F5',
+                        dark: '#070708',
+                        light: '#E8E9ED',
+                        secondary: '#D5CEBF',
+                        codebg: '#1E1E1E',
+                        surface: '#202020',
+                        border: '#3F3F44',
+                    },
+                    fontFamily: {
+                        mono: ['Fira Code', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* Toggle switch styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3F3F44;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #E8E9ED;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-slider {
+            background-color: #4EFFFF;
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+            background-color: #070708;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #070708;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3F3F44;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4EFFFF;
+        }
+
+        /* Status indicator animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .status-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-dark text-light font-mono min-h-screen flex flex-col" style="font-feature-settings: 'calt' 0;">
+    <!-- Header -->
+    <header class="border-b border-border px-4 py-2 flex items-center">
+        <h1 class="text-lg font-medium flex items-center space-x-4">
+            <img src="/static/assets/logo.png" alt="Crawl4AI" class="h-8">
+            <span class="text-secondary">Settings</span>
+            <a href="https://github.com/unclecode/crawl4ai" target="_blank" class="flex space-x-1">
+                <img src="https://img.shields.io/github/stars/unclecode/crawl4ai?style=social" alt="GitHub stars" class="h-5">
+            </a>
+        </h1>
+
+        <div class="ml-auto flex items-center space-x-4">
+            <a href="/playground" class="text-xs text-secondary hover:text-primary underline">Playground</a>
+            <a href="/dashboard" class="text-xs text-secondary hover:text-primary underline">Monitor</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-auto p-4 space-y-4 max-w-4xl mx-auto w-full">
+        <!-- Status Message -->
+        <div id="status-message" class="hidden bg-surface rounded-lg border border-border p-3 text-sm">
+            <span id="status-text"></span>
+        </div>
+
+        <!-- LLM Provider Settings -->
+        <section class="bg-surface rounded-lg border border-border overflow-hidden">
+            <div class="px-4 py-2 border-b border-border">
+                <h2 class="font-medium text-primary">LLM Provider</h2>
+                <p class="text-xs text-secondary mt-1">Configure the default LLM provider for extraction tasks</p>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- Provider -->
+                <div>
+                    <label for="DEFAULT_LLM_PROVIDER" class="block text-sm text-secondary mb-2">Provider</label>
+                    <input type="text" id="DEFAULT_LLM_PROVIDER"
+                        class="w-full bg-dark border border-border rounded px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                        placeholder="openai/gpt-4o">
+                    <p class="text-xs text-secondary mt-1">Format: company/model (e.g., openai/gpt-4o, anthropic/claude-3-sonnet)</p>
+                </div>
+
+                <!-- API Token -->
+                <div>
+                    <label for="DEFAULT_LLM_PROVIDER_TOKEN" class="block text-sm text-secondary mb-2">API Token</label>
+                    <div class="relative">
+                        <input type="password" id="DEFAULT_LLM_PROVIDER_TOKEN"
+                            class="w-full bg-dark border border-border rounded px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+                            placeholder="Enter your API token">
+                        <button type="button" onclick="togglePasswordVisibility('DEFAULT_LLM_PROVIDER_TOKEN')"
+                            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-secondary hover:text-primary">
+                            <svg id="DEFAULT_LLM_PROVIDER_TOKEN-eye" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-secondary mt-1">Your API token is stored locally in ~/.crawl4ai/global.yml</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Browser Settings -->
+        <section class="bg-surface rounded-lg border border-border overflow-hidden">
+            <div class="px-4 py-2 border-b border-border">
+                <h2 class="font-medium text-primary">Browser Settings</h2>
+                <p class="text-xs text-secondary mt-1">Configure default browser behavior</p>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- Headless Toggle -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <label class="text-sm text-light">Headless Mode</label>
+                        <p class="text-xs text-secondary">Run browser without visible window</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="BROWSER_HEADLESS">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Browser Type -->
+                <div>
+                    <label for="BROWSER_TYPE" class="block text-sm text-secondary mb-2">Browser Type</label>
+                    <select id="BROWSER_TYPE"
+                        class="w-full bg-dark border border-border rounded px-3 py-2 text-sm focus:border-primary focus:outline-none">
+                        <option value="chromium">Chromium</option>
+                        <option value="firefox">Firefox</option>
+                    </select>
+                </div>
+
+                <!-- User Agent Mode -->
+                <div>
+                    <label for="USER_AGENT_MODE" class="block text-sm text-secondary mb-2">User Agent Mode</label>
+                    <select id="USER_AGENT_MODE"
+                        class="w-full bg-dark border border-border rounded px-3 py-2 text-sm focus:border-primary focus:outline-none">
+                        <option value="default">Default</option>
+                        <option value="random">Random</option>
+                        <option value="mobile">Mobile</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Crawler Settings -->
+        <section class="bg-surface rounded-lg border border-border overflow-hidden">
+            <div class="px-4 py-2 border-b border-border">
+                <h2 class="font-medium text-primary">Crawler Settings</h2>
+                <p class="text-xs text-secondary mt-1">Configure default crawler behavior</p>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- Cache Mode -->
+                <div>
+                    <label for="CACHE_MODE" class="block text-sm text-secondary mb-2">Cache Mode</label>
+                    <select id="CACHE_MODE"
+                        class="w-full bg-dark border border-border rounded px-3 py-2 text-sm focus:border-primary focus:outline-none">
+                        <option value="bypass">Bypass - Always fetch fresh content</option>
+                        <option value="use">Use - Use cached content if available</option>
+                        <option value="refresh">Refresh - Update cache with new content</option>
+                    </select>
+                </div>
+
+                <!-- Verbose Toggle -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <label class="text-sm text-light">Verbose Mode</label>
+                        <p class="text-xs text-secondary">Enable detailed logging output</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="VERBOSE">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <!-- Claude OAuth Section -->
+        <section class="bg-surface rounded-lg border border-accent overflow-hidden">
+            <div class="px-4 py-2 border-b border-accent">
+                <h2 class="font-medium text-accent">Claude OAuth</h2>
+                <p class="text-xs text-secondary mt-1">Use Claude CLI for LLM tasks without API keys</p>
+            </div>
+            <div class="p-4 space-y-4">
+                <!-- Status -->
+                <div id="oauth-status" class="flex items-center space-x-3">
+                    <div id="oauth-indicator" class="w-3 h-3 rounded-full bg-gray-500"></div>
+                    <span id="oauth-text" class="text-sm">Checking status...</span>
+                </div>
+
+                <!-- Instructions -->
+                <div class="bg-dark rounded p-3 text-xs">
+                    <p class="text-secondary mb-2">To use Claude OAuth:</p>
+                    <ol class="list-decimal list-inside space-y-1 text-secondary">
+                        <li>Install Claude CLI: <code class="text-primary">npm install -g @anthropic-ai/claude-code</code></li>
+                        <li>Login: <code class="text-primary">claude auth login</code></li>
+                        <li>Use in Crawl4AI: <code class="text-primary">LLMConfig(provider="claude-oauth")</code></li>
+                    </ol>
+                </div>
+
+                <!-- Refresh Button -->
+                <button onclick="checkOAuthStatus()"
+                    class="px-3 py-1 border border-border rounded text-xs hover:bg-dark">
+                    Refresh Status
+                </button>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-3">
+            <button onclick="saveSettings()"
+                class="bg-primary text-dark px-6 py-2 rounded font-medium hover:bg-primarydim">
+                Save Settings
+            </button>
+            <button onclick="resetSettings()"
+                class="border border-border px-6 py-2 rounded hover:bg-surface">
+                Reset to Defaults
+            </button>
+        </div>
+
+        <!-- Config Path Info -->
+        <div class="text-xs text-secondary">
+            Config file: <code id="config-path" class="text-primary">~/.crawl4ai/global.yml</code>
+        </div>
+    </main>
+
+    <script>
+        // ========== State ==========
+        let currentSettings = {};
+        let settingsSchema = {};
+
+        // ========== UI Helpers ==========
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status-message');
+            const textEl = document.getElementById('status-text');
+
+            statusEl.classList.remove('hidden', 'border-green-500', 'border-red-500');
+            statusEl.classList.add(isError ? 'border-red-500' : 'border-green-500');
+            textEl.textContent = message;
+            textEl.className = isError ? 'text-red-400' : 'text-green-400';
+
+            setTimeout(() => {
+                statusEl.classList.add('hidden');
+            }, 3000);
+        }
+
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const eyeIcon = document.getElementById(inputId + '-eye');
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                `;
+            } else {
+                input.type = 'password';
+                eyeIcon.innerHTML = `
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                `;
+            }
+        }
+
+        // ========== Settings Management ==========
+        async function loadSettings() {
+            try {
+                const response = await fetch('/settings');
+                const data = await response.json();
+
+                currentSettings = data.settings;
+                settingsSchema = data.schema;
+
+                // Update config path display
+                document.getElementById('config-path').textContent = data.config_path;
+
+                // Populate form fields
+                for (const [key, setting] of Object.entries(data.settings)) {
+                    const element = document.getElementById(key);
+                    if (!element) continue;
+
+                    const schema = settingsSchema[key];
+                    const value = setting.value;
+
+                    if (schema.type === 'boolean') {
+                        element.checked = value === true || value === 'true';
+                    } else if (element.tagName === 'SELECT') {
+                        element.value = value;
+                    } else {
+                        element.value = value || '';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load settings:', error);
+                showStatus('Failed to load settings', true);
+            }
+        }
+
+        async function saveSettings() {
+            const settings = {};
+
+            for (const key of Object.keys(settingsSchema)) {
+                const element = document.getElementById(key);
+                if (!element) continue;
+
+                const schema = settingsSchema[key];
+
+                if (schema.type === 'boolean') {
+                    settings[key] = element.checked;
+                } else {
+                    settings[key] = element.value;
+                }
+            }
+
+            try {
+                const response = await fetch('/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('Settings saved successfully!');
+                    // Reload to get masked values
+                    await loadSettings();
+                } else {
+                    showStatus('Errors: ' + data.errors.join(', '), true);
+                }
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                showStatus('Failed to save settings', true);
+            }
+        }
+
+        async function resetSettings() {
+            if (!confirm('Reset all settings to default values?')) return;
+
+            try {
+                const response = await fetch('/settings/reset', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus('Settings reset to defaults');
+                    await loadSettings();
+                } else {
+                    showStatus('Failed to reset settings', true);
+                }
+            } catch (error) {
+                console.error('Failed to reset settings:', error);
+                showStatus('Failed to reset settings', true);
+            }
+        }
+
+        // ========== Claude OAuth ==========
+        async function checkOAuthStatus() {
+            const indicator = document.getElementById('oauth-indicator');
+            const text = document.getElementById('oauth-text');
+
+            indicator.className = 'w-3 h-3 rounded-full bg-yellow-500 status-pulse';
+            text.textContent = 'Checking...';
+
+            try {
+                const response = await fetch('/settings/claude-oauth-status');
+                const data = await response.json();
+
+                indicator.classList.remove('status-pulse');
+
+                if (!data.cli_installed) {
+                    indicator.className = 'w-3 h-3 rounded-full bg-red-500';
+                    text.innerHTML = '<span class="text-red-400">Claude CLI not installed</span>';
+                } else if (data.logged_in) {
+                    indicator.className = 'w-3 h-3 rounded-full bg-green-500';
+                    text.innerHTML = `<span class="text-green-400">Logged in</span>` +
+                        (data.user ? ` <span class="text-secondary">- ${data.user}</span>` : '');
+                } else {
+                    indicator.className = 'w-3 h-3 rounded-full bg-yellow-500';
+                    text.innerHTML = '<span class="text-yellow-400">CLI installed, not logged in</span>';
+                }
+            } catch (error) {
+                indicator.className = 'w-3 h-3 rounded-full bg-gray-500';
+                text.innerHTML = '<span class="text-secondary">Could not check status</span>';
+            }
+        }
+
+        // ========== Initialize ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            checkOAuthStatus();
+        });
+    </script>
+</body>
+</html>
