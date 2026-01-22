@@ -718,18 +718,29 @@
             // Remove ANSI escape codes for cleaner matching
             const cleanBuffer = buffer.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
 
-            // Look for Claude OAuth URL pattern
-            const urlMatch = cleanBuffer.match(/https:\/\/claude\.ai\/oauth\/authorize\?[^\s\n]+/);
-            if (urlMatch) {
-                // Extract and clean the URL (remove any line breaks/whitespace)
-                let url = urlMatch[0];
-                // Remove any trailing characters that aren't part of URL
-                url = url.replace(/[\s\n\r]+/g, '');
+            // Find URL start and extract until "Paste code" marker
+            const urlStart = cleanBuffer.indexOf('https://claude.ai/oauth/authorize?');
+            if (urlStart === -1) return;
 
-                if (url !== detectedOAuthUrl) {
-                    detectedOAuthUrl = url;
-                    showOAuthUrl(url);
-                }
+            // Find where URL ends (before "Paste code" or end of relevant section)
+            let urlEnd = cleanBuffer.indexOf('Paste code', urlStart);
+            if (urlEnd === -1) urlEnd = cleanBuffer.length;
+
+            // Extract the raw URL section (may contain line breaks)
+            let rawUrl = cleanBuffer.substring(urlStart, urlEnd);
+
+            // Clean: remove ALL whitespace, newlines, and control characters
+            let url = rawUrl.replace(/[\s\n\r\t]+/g, '');
+
+            // Validate it looks like a complete OAuth URL
+            if (url.includes('response_type=code') || url.includes('response_ty')) {
+                // Fix common break point: response_ty + pe=code
+                url = url.replace(/response_ty[^\w]*pe=/g, 'response_type=');
+            }
+
+            if (url !== detectedOAuthUrl && url.length > 100) {
+                detectedOAuthUrl = url;
+                showOAuthUrl(url);
             }
         }
 
