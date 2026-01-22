@@ -38,7 +38,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     redis-server \
     supervisor \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20 LTS for Claude CLI
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Claude CLI globally
+RUN npm install -g @anthropic-ai/claude-code && \
+    claude --version || echo "Claude CLI installed"
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
