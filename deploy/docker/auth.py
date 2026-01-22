@@ -30,14 +30,14 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
 
 def verify_token(credentials: HTTPAuthorizationCredentials) -> Dict:
     """Verify the JWT token from the Authorization header."""
-    
+
     if not credentials or not credentials.credentials:
         raise HTTPException(
-            status_code=401, 
+            status_code=401,
             detail="No token provided",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    
+
     token = credentials.credentials
     verifying_key = get_jwk_from_secret(SECRET_KEY)
     try:
@@ -45,7 +45,7 @@ def verify_token(credentials: HTTPAuthorizationCredentials) -> Dict:
         return payload
     except Exception as e:
         raise HTTPException(
-            status_code=401, 
+            status_code=401,
             detail=f"Invalid or expired token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"}
         )
@@ -53,13 +53,13 @@ def verify_token(credentials: HTTPAuthorizationCredentials) -> Dict:
 
 def get_token_dependency(config: Dict):
     """Return the token dependency if JWT is enabled, else a function that returns None."""
-    
+
     if config.get("security", {}).get("jwt_enabled", False):
         def jwt_required(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict:
             """Enforce JWT authentication when enabled."""
             if credentials is None:
                 raise HTTPException(
-                    status_code=401, 
+                    status_code=401,
                     detail="Authentication required. Please provide a valid Bearer token.",
                     headers={"WWW-Authenticate": "Bearer"}
                 )

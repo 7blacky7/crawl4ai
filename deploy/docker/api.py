@@ -22,7 +22,7 @@ from crawl4ai import (
     CacheMode,
     BrowserConfig,
     MemoryAdaptiveDispatcher,
-    RateLimiter, 
+    RateLimiter,
     LLMConfig
 )
 from crawl4ai.utils import perform_completion_with_backoff
@@ -332,7 +332,7 @@ async def handle_llm_request(
 ) -> JSONResponse:
     """Handle LLM extraction requests."""
     base_url = get_base_url(request)
-    
+
     try:
         if is_task_id(input_path):
             return await handle_task_status(
@@ -503,7 +503,7 @@ async def stream_results(crawler: AsyncWebCrawler, results_gen: AsyncGenerator) 
                 yield (json.dumps(error_response) + "\n").encode('utf-8')
 
         yield json.dumps({"status": "completed"}).encode('utf-8')
-        
+
     except asyncio.CancelledError:
         logger.warning("Client disconnected during streaming")
     finally:
@@ -548,13 +548,13 @@ async def handle_crawl_request(
                 base_delay=tuple(config["crawler"]["rate_limiter"]["base_delay"])
             ) if config["crawler"]["rate_limiter"]["enabled"] else None
         )
-        
+
         from crawler_pool import get_crawler
         crawler = await get_crawler(browser_config)
 
         # crawler: AsyncWebCrawler = AsyncWebCrawler(config=browser_config)
         # await crawler.start()
-        
+
         # Attach hooks if provided
         hooks_status = {}
         if hooks_config:
@@ -567,7 +567,7 @@ async def handle_crawl_request(
                 hook_manager=hook_manager
             )
             logger.info(f"Hooks attachment status: {hooks_status['status']}")
-        
+
         base_config = config["crawler"]["base_config"]
         # Iterate on key-value pairs in global_config then use hasattr to set them
         for key, value in base_config.items():
@@ -579,21 +579,21 @@ async def handle_crawl_request(
 
         results = []
         func = getattr(crawler, "arun" if len(urls) == 1 else "arun_many")
-        partial_func = partial(func, 
-                                urls[0] if len(urls) == 1 else urls, 
-                                config=crawler_config, 
+        partial_func = partial(func,
+                                urls[0] if len(urls) == 1 else urls,
+                                config=crawler_config,
                                 dispatcher=dispatcher)
         results = await partial_func()
-        
+
         # Ensure results is always a list
         if not isinstance(results, list):
             results = [results]
 
         # await crawler.close()
-        
+
         end_mem_mb = _get_memory_mb() # <--- Get memory after
         end_time = time.time()
-        
+
         if start_mem_mb is not None and end_mem_mb is not None:
             mem_delta_mb = end_mem_mb - start_mem_mb # <--- Calculate delta
             peak_mem_mb = max(peak_mem_mb if peak_mem_mb else 0, end_mem_mb) # <--- Get peak memory
@@ -616,15 +616,15 @@ async def handle_crawl_request(
                         "success": False,
                         "error_message": f"Unexpected result type: {type(result).__name__}"
                     }
-                
+
                 # if fit_html is not a string, set it to None to avoid serialization errors
                 if "fit_html" in result_dict and not (result_dict["fit_html"] is None or isinstance(result_dict["fit_html"], str)):
                     result_dict["fit_html"] = None
-                    
+
                 # If PDF exists, encode it to base64
                 if result_dict.get('pdf') is not None and isinstance(result_dict.get('pdf'), bytes):
                     result_dict['pdf'] = b64encode(result_dict['pdf']).decode('utf-8')
-                    
+
                 processed_results.append(result_dict)
             except Exception as e:
                 logger.error(f"Error processing result: {e}")
@@ -633,7 +633,7 @@ async def handle_crawl_request(
                     "success": False,
                     "error_message": str(e)
                 })
-            
+
         response = {
             "success": True,
             "results": processed_results,
@@ -674,7 +674,7 @@ async def handle_crawl_request(
                         "errors": [{"error": str(e)}],
                         "summary": {}
                     }
-        
+
         return response
 
     except Exception as e:
@@ -739,7 +739,7 @@ async def handle_stream_crawl_request(
 
         # crawler = AsyncWebCrawler(config=browser_config)
         # await crawler.start()
-        
+
         # Attach hooks if provided
         if hooks_config:
             from hook_manager import attach_user_hooks_to_crawler, UserHookManager
@@ -776,7 +776,7 @@ async def handle_stream_crawl_request(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
-        
+
 async def handle_crawl_job(
     redis,
     background_tasks: BackgroundTasks,
