@@ -106,7 +106,9 @@ COPY . /tmp/project/
 COPY deploy/docker/supervisord.conf .
 
 COPY deploy/docker/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip uninstall -y pyjwt 2>/dev/null || true && \
+    pip install --no-cache-dir jwt>=1.3.1
 
 RUN if [ "$INSTALL_TYPE" = "all" ] ; then \
         pip install --no-cache-dir \
@@ -140,6 +142,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 RUN playwright install --with-deps chromium
 
 COPY deploy/docker/* ${APP_HOME}/
+COPY deploy/docker/static ${APP_HOME}/static
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD bash -c '\
